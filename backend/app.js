@@ -6,7 +6,13 @@ const rateLimit = require("express-rate-limit");
 const hpp = require("hpp");
 const cookieParser = require("cookie-parser");
 const mongoSanitize = require("express-mongo-sanitize");
+
 const AppError = require("./utils/appError");
+const globalErrorHandler = require('./controllers/errorController');
+
+// Routes
+const taskRouter = require('./routes/taskRoutes');
+const userRouter = require('./routes/userRoutes');
 
 const app = express();
 
@@ -69,6 +75,8 @@ app.get("/", (_, res) => {
 });
 
 // Routes
+app.use('/api/v1/tasks', taskRouter);
+app.use('/api/v1/users', userRouter);
 
 // Errors
 app.use("*", (req, _, next) => {
