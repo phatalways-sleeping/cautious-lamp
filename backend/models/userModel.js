@@ -8,7 +8,9 @@ const userSchema = new mongoose.Schema(
     email: {
       type: mongoose.SchemaTypes.String,
       validate: {
-        validator: (val) => validator.isEmail(val),
+        validator(val) {
+          return validator.isEmail(val);
+        },
         message: "Email must be in a correct format",
       },
       unique: [true, "A email must be unique"],
@@ -22,7 +24,9 @@ const userSchema = new mongoose.Schema(
     passwordConfirm: {
       type: mongoose.SchemaTypes.String,
       validate: {
-        validator: (val) => val === this.password,
+        validator(val) {
+          return val === this.password;
+        },
         message: "Password confirm must equal to password",
       },
       required: [true, "An account must have a confirm password"],
@@ -52,18 +56,18 @@ const userSchema = new mongoose.Schema(
 );
 
 // Middlewares
-userSchema.pre("save", async (next) => {
+userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
   this.password = await bcrypt.hash(this.password, 12);
   this.passwordConfirm = undefined;
   return next();
 });
-userSchema.pre("save", (next) => {
+userSchema.pre("save", function (next) {
   if (!this.isModified("password") || this.isNew) return next();
   this.passwordChangedAt = Date.now() - 1000;
   return next();
 });
-userSchema.pre(/^find/, (next) => {
+userSchema.pre(/^find/, function (next) {
   this.find({
     active: {
       $ne: false,
@@ -73,22 +77,22 @@ userSchema.pre(/^find/, (next) => {
 });
 
 // Instance methods
-userSchema.methods.correctPassword = async (
+userSchema.methods.correctPassword = async function (
   candidatePassword,
   userPassword
-) => {
+) {
   const result = await bcrypt.compare(candidatePassword, userPassword);
   return result;
 };
 
-userSchema.methods.changePasswordAfter = (jwtTimestamp) => {
+userSchema.methods.changePasswordAfter = function (jwtTimestamp) {
   if (this.changePasswordAfter) {
     return this.passwordChangedAt > jwtTimestamp;
   }
   return false;
 };
 
-userSchema.methods.createPasswordToken = () => {
+userSchema.methods.createPasswordToken = function () {
   const resetToken = crypto.randomBytes(32).toString("hex");
   this.passwordResetToken = crypto
     .createHash("sha256")

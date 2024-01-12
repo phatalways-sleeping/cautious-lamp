@@ -11,5 +11,12 @@ const router = express.Router();
 // Alias routes
 
 // Normal
+// Create
+
+// Read
+
+// Update
+
+// Delete
 
 module.exports = router;

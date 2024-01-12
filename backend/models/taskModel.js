@@ -11,16 +11,33 @@ const taskSchema = new mongoose.Schema(
     scheduledDate: {
       type: mongoose.SchemaTypes.Date,
       validate: {
-        validator: (val) => val >= Date.now(),
+        validator(val) {
+          return val >= Date.now();
+        },
         message: "Scheduled date must be from today",
       },
     },
+    category: {
+      type: mongoose.SchemaTypes.String,
+      required: [true, "A task must have a category"],
+    },
+    notes: mongoose.SchemaTypes.String,
+    completion: {
+      type: mongoose.SchemaTypes.Number,
+      default: 0.0,
+    },
+    attachments: [mongoose.SchemaTypes.String],
     steps: [mongoose.SchemaTypes.String],
     title: {
       type: mongoose.SchemaTypes.String,
       required: [true, "A task must have a title"],
       minLength: [10, "A task name must be greater or equal to 10 characters"],
-      maxLength: [40, "A task name must be smaller or equal to 40 characters"],
+      maxLength: [
+        100,
+        "A task name must be smaller or equal to 100 characters",
+      ],
+      trim: true,
+      unique: true,
     },
     priority: {
       type: mongoose.SchemaTypes.String,
@@ -54,6 +71,11 @@ const taskSchema = new mongoose.Schema(
       default: Date.now(),
       select: false, // Hide this attribute from the client
     },
+    isDeleted: {
+      type: mongoose.SchemaTypes.Boolean,
+      default: false,
+      select: false,
+    },
   },
   {
     toJSON: {
@@ -66,15 +88,45 @@ const taskSchema = new mongoose.Schema(
   }
 );
 
-// Document Middlewares: run before .save and .create
-taskSchema.pre("save", (next) => {
+// Indexing
+// Search for task name
+taskSchema.index({
+  slug: 1,
+});
+// Search for category and priority
+taskSchema.index({
+  category: 1,
+  priority: -1,
+});
+
+// Middlewares
+taskSchema.pre("save", function (next) {
   this.slug = slug(this.title, {
     lower: true,
   });
   next();
 });
 
-taskSchema.virtual("late").get(() => this.dueDate > Date.now());
+taskSchema.pre(/^find/, function (next) {
+  this.find({
+    isDeleted: {
+      $ne: true,
+    },
+  });
+  return next();
+});
+
+taskSchema.pre(/^find/, function (next) {
+  this.populate({
+    path: "user",
+    select: "email -__v -passwordChangedAt",
+  });
+  return next;
+});
+
+taskSchema.virtual("late").get(function () {
+  return this.dueDate > Date.now();
+});
 
 const Task = mongoose.model("Task", taskSchema);
 
