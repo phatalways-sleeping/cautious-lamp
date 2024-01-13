@@ -34,6 +34,14 @@ const userSchema = new mongoose.Schema(
     passwordChangedAt: mongoose.SchemaTypes.Date,
     passwordResetToken: mongoose.SchemaTypes.String,
     passwordResetTokenExpired: mongoose.SchemaTypes.Date,
+    role: {
+      type: mongoose.SchemaTypes.String,
+      enum: {
+        values: ["admin", "user"],
+        message: "An account is either admin or user",
+      },
+      default: "user",
+    },
     createdAt: {
       type: mongoose.SchemaTypes.Date,
       default: Date.now(),

@@ -8,11 +8,11 @@ const cookieParser = require("cookie-parser");
 const mongoSanitize = require("express-mongo-sanitize");
 
 const AppError = require("./utils/appError");
-const globalErrorHandler = require('./controllers/errorController');
+const globalErrorHandler = require("./controllers/errorController");
 
 // Routes
-const taskRouter = require('./routes/taskRoutes');
-const userRouter = require('./routes/userRoutes');
+const taskRouter = require("./routes/taskRoutes");
+const userRouter = require("./routes/userRoutes");
 
 const app = express();
 
@@ -70,13 +70,13 @@ app.use((req, _, next) => {
   next();
 });
 
-app.get("/", (_, res) => {
-  res.send("Hello World!");
-});
+// app.get("/", (_, res) => {
+//   res.send("Hello World!");
+// });
 
 // Routes
-app.use('/api/v1/tasks', taskRouter);
-app.use('/api/v1/users', userRouter);
+app.use("/api/v1/tasks", taskRouter);
+app.use("/api/v1/users", userRouter);
 
 // Errors
 app.use("*", (req, _, next) => {

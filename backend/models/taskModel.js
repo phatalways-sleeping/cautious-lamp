@@ -121,7 +121,7 @@ taskSchema.pre(/^find/, function (next) {
     path: "user",
     select: "email -__v -passwordChangedAt",
   });
-  return next;
+  return next();
 });
 
 taskSchema.virtual("late").get(function () {

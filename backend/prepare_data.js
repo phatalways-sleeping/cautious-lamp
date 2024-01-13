@@ -1,8 +1,9 @@
 const dotenv = require("dotenv");
 const mongoose = require("mongoose");
 const app = require("./app");
+const User = require("./models/userModel");
 // const users = require("./assets/usersData");
-const tasks = require("./assets/tasksData");
+// const tasks = require("./assets/tasksData");
 
 process.on("uncaughtException", (err) => {
   console.log(err.name, err.message);
@@ -37,7 +38,14 @@ async function saveDataAndStartServer(data) {
 
 // Call the async function
 // saveDataAndStartServer(users);
-saveDataAndStartServer(tasks);
+saveDataAndStartServer([
+  new User({
+    email: "admin@gmail.com",
+    password: "admin12345",
+    passwordConfirm: "admin12345",
+    role: "admin",
+  }),
+]);
 
 app.listen(port, () => {
   console.log(`Server is listening at port ${port}`);

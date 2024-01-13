@@ -1,7 +1,7 @@
 const express = require("express");
 
 // Controllers
-
+const tasksController = require('../controllers/taskController');
 //
 
 const router = express.Router();
@@ -14,6 +14,8 @@ const router = express.Router();
 // Create
 
 // Read
+router.get('/', tasksController.getAll);
+router.get('/:id', tasksController.getOne);
 
 // Update
 
