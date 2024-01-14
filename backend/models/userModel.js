@@ -70,17 +70,24 @@ userSchema.pre("save", async function (next) {
   this.passwordConfirm = undefined;
   return next();
 });
+
 userSchema.pre("save", function (next) {
   if (!this.isModified("password") || this.isNew) return next();
   this.passwordChangedAt = Date.now() - 1000;
   return next();
 });
+
 userSchema.pre(/^find/, function (next) {
   this.find({
     active: {
       $ne: false,
     },
   });
+  return next();
+});
+
+userSchema.pre(/^find/, function (next) {
+  this.select("-__v -role");
   return next();
 });
 
@@ -94,7 +101,7 @@ userSchema.methods.correctPassword = async function (
 };
 
 userSchema.methods.changePasswordAfter = function (jwtTimestamp) {
-  if (this.changePasswordAfter) {
+  if (this.passwordChangedAt) {
     return this.passwordChangedAt > jwtTimestamp;
   }
   return false;

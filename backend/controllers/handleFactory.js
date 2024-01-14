@@ -1,6 +1,7 @@
 const APIFeatures = require("../utils/apiFeatures");
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
+const User = require("../models/userModel");
 
 exports.getAll = (Model) =>
   catchAsync(async (req, res, _) => {
@@ -19,13 +20,19 @@ exports.getAll = (Model) =>
     });
   });
 
-exports.getOne = (Model) =>
+exports.getOne = (Model, useSlug = false) =>
   catchAsync(async (req, res, next) => {
-    const { id } = req.params;
-    const query = Model.findById(id);
+    let query;
+    if (useSlug) {
+      const { slug } = req.params;
+      query = Model.findOne({ slug });
+    } else {
+      const { id } = req.params;
+      query = Model.findById(id);
+    }
     const doc = await query;
     if (!doc) {
-      return next(new AppError(`No document found with ID: ${id}`), 404);
+      return next(new AppError(`No document found`), 404);
     }
     return res.status(200).json({
       status: "success",

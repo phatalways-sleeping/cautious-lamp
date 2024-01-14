@@ -61,6 +61,12 @@ app.use(
   hpp({
     whitelist: [
       // Later I will pass some query variables here
+      "priority",
+      "dueDate",
+      "assignee",
+      "creator",
+      "status",
+      "scheduledDate",
     ],
   })
 );
@@ -69,10 +75,6 @@ app.use((req, _, next) => {
   req.requestTime = new Date().toISOString();
   next();
 });
-
-// app.get("/", (_, res) => {
-//   res.send("Hello World!");
-// });
 
 // Routes
 app.use("/api/v1/tasks", taskRouter);

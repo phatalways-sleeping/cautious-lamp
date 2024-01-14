@@ -8,10 +8,19 @@ const { signToken } = require("../utils/signToken");
 
 const createAndSendToken = (user, statusCode, res) => {
   const token = signToken(user._id);
-  // Cookies
+  // Send httpOnly Cookie
   const cookieOptions = {
-    expires: new Date() + process.env.JWT_EXPIRES_IN * 24 * 60 * 60 * 1000,
+    expires: new Date(
+      Date.now() +
+        Number.parseInt(process.env.JWT_EXPIRES_IN.split("d")[0], 10) *
+          24 *
+          60 *
+          60 *
+          1000
+    ),
+    secure: true,
   };
+
   if (process.env.NODE_ENV === "prod") {
     cookieOptions.secure = true;
   }
@@ -33,7 +42,8 @@ exports.protect = catchAsync(async (req, _, next) => {
     req.headers.authorization &&
     req.headers.authorization.startsWith("Bearer")
   ) {
-    [, token] = req.headers.authorization.splits(" ");
+    // eslint-disable-next-line prefer-destructuring
+    token = req.headers.authorization.split(" ")[1];
   } else if (req.cookies.jwt) {
     token = req.cookies.jwt;
   }
@@ -44,7 +54,7 @@ exports.protect = catchAsync(async (req, _, next) => {
     );
   }
   // 1) Validate the token
-  const decode = await promisify(jwt.decode)(token, process.env.JWT_SECRET);
+  const decode = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
   // 2) Check if the user still exists
   const user = await User.findById(decode.id);
   if (!user) {
@@ -108,6 +118,10 @@ exports.signUp = catchAsync(async (req, res, next) => {
     password,
     passwordConfirm,
   });
+  newUser.role = undefined;
+  newUser.createdAt = undefined;
+  newUser.active = undefined;
+  newUser.__v = undefined;
   return createAndSendToken(newUser, 201, res);
 });
 
@@ -164,6 +178,27 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
   }
   user.passwordResetToken = undefined;
   user.passwordResetTokenExpired = undefined;
+  user.password = password;
+  user.passwordConfirm = passwordConfirm;
+  await user.save();
+  return createAndSendToken(user, 200, res);
+});
+
+exports.deleteMe = catchAsync(async (req, res, _) => {
+  const { id } = req.user;
+
+  await User.findByIdAndUpdate(id, { isDeleted: true });
+
+  res.status(200).json({ status: "success", data: null });
+});
+
+exports.updatePassword = catchAsync(async (req, res, next) => {
+  const { password, passwordConfirm, currentPassword } = req.body;
+  const { id } = req.user;
+  const user = await User.findById(id).select("+password");
+  if (!(await user.correctPassword(currentPassword, user.password))) {
+    return next(new AppError("Current password is incorrect", 401));
+  }
   user.password = password;
   user.passwordConfirm = passwordConfirm;
   await user.save();

@@ -152,9 +152,14 @@ taskSchema.pre(/^find/, function (next) {
 });
 
 taskSchema.pre(/^find/, function (next) {
+  this.select("-__v");
+  return next();
+});
+
+taskSchema.pre(/^find/, function (next) {
   this.populate({
-    path: "user",
-    select: "email -__v -passwordChangedAt",
+    path: "creator",
+    select: "email -__v",
   });
   return next();
 });
