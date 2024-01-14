@@ -12,9 +12,9 @@ const taskSchema = new mongoose.Schema(
       type: mongoose.SchemaTypes.Date,
       validate: {
         validator(val) {
-          return val >= Date.now();
+          return val <= this.dueDate;
         },
-        message: "Scheduled date must be from today",
+        message: "Scheduled date must be before due date",
       },
     },
     category: {
@@ -22,17 +22,35 @@ const taskSchema = new mongoose.Schema(
       required: [true, "A task must have a category"],
     },
     notes: mongoose.SchemaTypes.String,
+    steps: [
+      {
+        title: {
+          type: mongoose.SchemaTypes.String,
+          required: [true, "A step must have a title"],
+          minlength: [10, "A step's title must be at least 10 characters"],
+          maxlength: [100, "A step's title must be at most 100 characters"],
+          trim: true,
+        },
+        description: mongoose.SchemaTypes.String,
+        notes: mongoose.SchemaTypes.String,
+        isCompleted: {
+          type: mongoose.SchemaTypes.Boolean,
+          default: false,
+        },
+      },
+    ],
     completion: {
       type: mongoose.SchemaTypes.Number,
-      default: 0.0,
+      default: 0,
+      min: [0, "Completion must be from 0"],
+      max: [100, "Completion must be at most 100"],
     },
     attachments: [mongoose.SchemaTypes.String],
-    steps: [mongoose.SchemaTypes.String],
     title: {
       type: mongoose.SchemaTypes.String,
       required: [true, "A task must have a title"],
-      minLength: [10, "A task name must be greater or equal to 10 characters"],
-      maxLength: [
+      minlength: [10, "A task name must be greater or equal to 10 characters"],
+      maxlength: [
         100,
         "A task name must be smaller or equal to 100 characters",
       ],
@@ -105,6 +123,23 @@ taskSchema.pre("save", function (next) {
     lower: true,
   });
   next();
+});
+
+taskSchema.pre("save", function (next) {
+  if (!this.isModified("steps") || !this.isNew) return next();
+  if (this.steps === undefined) this.completion = 0.0;
+  else {
+    this.completion = Math.round(
+      (this.steps.reduce((prev, curr, _) => {
+        if (curr.isCompleted) return prev + 1;
+        return prev;
+      }, 0) *
+        100 *
+        1.0) /
+        (this.steps.length * 1.0)
+    );
+  }
+  return next();
 });
 
 taskSchema.pre(/^find/, function (next) {

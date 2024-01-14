@@ -7,7 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start:dev": "nodemon server.js",
     "start:prod": "NODE_ENV=prod node server.js",
-    "start:data": "node prepare_data.js",
+    "start:data": "node data.js",
     "lint": "eslint ."
   },
   "author": "Phat K. Tran",

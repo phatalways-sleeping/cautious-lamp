@@ -1,4 +1,5 @@
 const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
 const { promisify } = require("util");
 const User = require("../models/userModel");
 const AppError = require("../utils/appError");
@@ -118,4 +119,53 @@ exports.logout = catchAsync(async (_, res, __) => {
   res.status(200).json({
     status: "success",
   });
+});
+
+exports.forgetPassword = catchAsync(async (req, res, next) => {
+  // 1) Get the email from the request body
+  const { email } = req.body;
+  // 2) Find the user by email
+  const user = await User.findOne({ email });
+  if (!user) {
+    return next(new AppError(`Cannot find any user with email: ${email}`), 404);
+  }
+  // 3) Create password reset token
+  const resetToken = user.createPasswordToken();
+  user.save({
+    validateBeforeSave: false,
+  });
+  try {
+    // Send to email
+  } catch (err) {
+    user.passwordResetToken = undefined;
+    user.passwordResetTokenExpired = undefined;
+    user.save({
+      validateBeforeSave: false,
+    });
+    return next(new AppError(`Cannot send token to the email: ${email}`, 404));
+  }
+  return res.status(200).json({
+    status: "success",
+    message: "Token sent to email",
+  });
+});
+
+exports.resetPassword = catchAsync(async (req, res, next) => {
+  const { password, passwordConfirm, token } = req.body;
+  const resetToken = crypto.createHash("sha256").update(token).digest("hex");
+  const user = await User.findOne({
+    passwordResetToken: resetToken,
+    passwordResetTokenExpired: {
+      $gt: Date.now(),
+    },
+  });
+  if (!user) {
+    return next(new AppError("Either token is incorrect or has expired", 400));
+  }
+  user.passwordResetToken = undefined;
+  user.passwordResetTokenExpired = undefined;
+  user.password = password;
+  user.passwordConfirm = passwordConfirm;
+  await user.save();
+  return createAndSendToken(user, 200, res);
 });
