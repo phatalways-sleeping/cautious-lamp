@@ -165,6 +165,7 @@ taskSchema.pre(/^find/, function (next) {
 });
 
 taskSchema.virtual("late").get(function () {
+  if (this.status === "done" || this.completion === 100) return false;
   return this.dueDate > Date.now();
 });
 

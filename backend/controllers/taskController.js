@@ -6,13 +6,19 @@ const factory = require("./handleFactory");
 
 exports.getAll = factory.getAll(Task);
 
-exports.getOne = (useSlug = false) => factory.getOne(Task, useSlug);
+exports.getOne = factory.getOne(Task);
 
 exports.createOne = factory.createOne(Task);
 
 exports.updateOne = factory.updateOne(Task);
 
 exports.deleteOne = factory.deleteOne(Task);
+
+exports.restrictsFields = catchAsync(async (req, _, next) => {
+  const restrictedFields = ["creator", "isDeleted", "slug", "createdAt"];
+  restrictedFields.forEach((field) => delete req.body[field]);
+  next();
+});
 
 exports.setUpTodayTasks = catchAsync(async (req, _, next) => {
   req.query = {
@@ -21,7 +27,6 @@ exports.setUpTodayTasks = catchAsync(async (req, _, next) => {
       $eq: Date.now(),
     },
   };
-  console.log(req.query);
   next();
 });
 
@@ -31,7 +36,6 @@ exports.setUpTop5NearestTasks = catchAsync(async (req, _, next) => {
     sort: "scheduledDate,-dueDate",
     limit: 5,
   };
-  console.log(req.query);
   next();
 });
 

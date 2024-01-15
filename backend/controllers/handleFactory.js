@@ -1,7 +1,6 @@
 const APIFeatures = require("../utils/apiFeatures");
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
-const User = require("../models/userModel");
 
 exports.getAll = (Model) =>
   catchAsync(async (req, res, _) => {
@@ -20,19 +19,13 @@ exports.getAll = (Model) =>
     });
   });
 
-exports.getOne = (Model, useSlug = false) =>
+exports.getOne = (Model) =>
   catchAsync(async (req, res, next) => {
-    let query;
-    if (useSlug) {
-      const { slug } = req.params;
-      query = Model.findOne({ slug });
-    } else {
-      const { id } = req.params;
-      query = Model.findById(id);
-    }
+    const { id } = req.params;
+    const query = Model.findById(id);
     const doc = await query;
     if (!doc) {
-      return next(new AppError(`No document found`), 404);
+      return next(new AppError(`Cannot find any document with ID: ${id}`), 404);
     }
     return res.status(200).json({
       status: "success",
@@ -55,12 +48,13 @@ exports.createOne = (Model) =>
 exports.updateOne = (Model) =>
   catchAsync(async (req, res, next) => {
     const { id } = req.params;
-    const doc = await Model.findByIdAndUpdate(id, req.body, {
-      runValidators: true,
-      new: true,
-    });
+    const query = Model.findByIdAndUpdate(id, req.body);
+    const doc = await query;
     if (!doc) {
       return next(new AppError(`Cannot find any document with ID: ${id}`), 404);
+    }
+    if (req.body.title) { // For updating title of a task, call .save to trigger pre("save")
+      await doc.save();
     }
     return res.status(200).json({
       status: "success",

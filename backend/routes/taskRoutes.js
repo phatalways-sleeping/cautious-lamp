@@ -17,7 +17,6 @@ router.get(
   tasksController.setUpTop5NearestTasks,
   tasksController.getAll
 );
-
 router.get("/today", tasksController.setUpTodayTasks, tasksController.getAll);
 // Normal
 // Create
@@ -29,9 +28,14 @@ router.post(
 );
 // Read
 router.get("/", tasksController.setUpUserId, tasksController.getAll);
-router.get("/:slug", tasksController.getOne(true));
+router.get("/:id", tasksController.getOne);
 // Update
-
+router.put(
+  "/:id",
+  tasksController.restrictsFields,
+  tasksController.updateOne
+);
 // Delete
+router.delete("/:id", tasksController.deleteOne);
 
 module.exports = router;
