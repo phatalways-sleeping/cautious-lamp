@@ -17,7 +17,19 @@ router.get(
   tasksController.setUpTop5NearestTasks,
   tasksController.getAll
 );
+// Get today's tasks
 router.get("/today", tasksController.setUpTodayTasks, tasksController.getAll);
+// Mark a tasks as complete or incomplete (toggle)
+router.get(
+  "/:id/mark-complete",
+  tasksController.setUpTaskCompletion('done'),
+  tasksController.updateOne
+);
+router.get(
+  "/:id/mark-incomplete",
+  tasksController.setUpTaskCompletion('in-progress'),
+  tasksController.updateOne
+);
 // Normal
 // Create
 router.post(
@@ -30,11 +42,7 @@ router.post(
 router.get("/", tasksController.setUpUserId, tasksController.getAll);
 router.get("/:id", tasksController.getOne);
 // Update
-router.put(
-  "/:id",
-  tasksController.restrictsFields,
-  tasksController.updateOne
-);
+router.put("/:id", tasksController.restrictsFields, tasksController.updateOne);
 // Delete
 router.delete("/:id", tasksController.deleteOne);
 

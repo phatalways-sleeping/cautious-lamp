@@ -39,6 +39,13 @@ exports.setUpTop5NearestTasks = catchAsync(async (req, _, next) => {
   next();
 });
 
+exports.setUpTaskCompletion = (status) => catchAsync(async (req, _, next) => {
+  req.body = {
+    status,
+  };
+  next();
+});
+
 exports.setUpUserId = catchAsync(async (req, _, next) => {
   if (!req.body.user) {
     req.body.creator = req.user.id;

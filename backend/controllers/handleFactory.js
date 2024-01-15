@@ -48,12 +48,16 @@ exports.createOne = (Model) =>
 exports.updateOne = (Model) =>
   catchAsync(async (req, res, next) => {
     const { id } = req.params;
-    const query = Model.findByIdAndUpdate(id, req.body);
+    const query = Model.findByIdAndUpdate(id, req.body, {
+      runValidators: true,
+      new: true,
+    });
     const doc = await query;
     if (!doc) {
       return next(new AppError(`Cannot find any document with ID: ${id}`), 404);
     }
-    if (req.body.title) { // For updating title of a task, call .save to trigger pre("save")
+    if (req.body.title) {
+      // For updating title of a task, call .save to trigger pre("save")
       await doc.save();
     }
     return res.status(200).json({
