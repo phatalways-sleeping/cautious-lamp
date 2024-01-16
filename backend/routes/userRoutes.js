@@ -4,11 +4,13 @@ const express = require("express");
 const userController = require("../controllers/userController");
 const authController = require("../controllers/authController");
 const taskRoutes = require("./taskRoutes");
+const projectRoutes = require("./projectRoutes");
 //
 const router = express.Router();
 
 // Merged routes
-router.use('/tasks', taskRoutes);
+router.use("/tasks", taskRoutes);
+router.use("/projects", projectRoutes);
 
 // Normal
 router.post("/login", authController.login);

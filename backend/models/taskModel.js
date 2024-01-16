@@ -171,13 +171,36 @@ taskSchema.virtual("late").get(function () {
 
 const Task = mongoose.model("Task", taskSchema);
 
-const CooperatedTask = Task.discriminator(
-  "CooperatedTask",
+const ThemeTask = Task.discriminator(
+  "ThemeTask",
   new mongoose.Schema(
     {
       assignee: {
         type: mongoose.SchemaTypes.ObjectId,
         ref: "User",
+      },
+      theme: {
+        type: mongoose.SchemaTypes.ObjectId,
+        ref: "Theme",
+        required: [true, "A theme's task must have theme's id"],
+      },
+    },
+    { discriminatorKey: "kind" }
+  )
+);
+
+const ProjectTask = Task.discriminator(
+  "ProjectTask",
+  new mongoose.Schema(
+    {
+      assignee: {
+        type: mongoose.SchemaTypes.ObjectId,
+        ref: "User",
+      },
+      project: {
+        type: mongoose.SchemaTypes.ObjectId,
+        ref: "Project",
+        required: [true, "A project's task must have theme's id"],
       },
     },
     { discriminatorKey: "kind" }
@@ -186,5 +209,6 @@ const CooperatedTask = Task.discriminator(
 
 module.exports = {
   Task,
-  CooperatedTask,
+  ThemeTask,
+  ProjectTask,
 };

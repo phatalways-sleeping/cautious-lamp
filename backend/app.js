@@ -67,6 +67,8 @@ app.use(
       "creator",
       "status",
       "scheduledDate",
+      "complete",
+      "title",
     ],
   })
 );

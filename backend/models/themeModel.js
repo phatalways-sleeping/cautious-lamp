@@ -33,7 +33,7 @@ const themeSchema = new mongoose.Schema(
         {
           type: mongoose.SchemaTypes.ObjectId,
           required: true,
-          ref: "Task",
+          ref: "ThemeTask",
         },
       ],
       default: [],

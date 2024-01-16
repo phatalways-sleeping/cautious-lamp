@@ -48,7 +48,7 @@ const projectSchema = new mongoose.Schema(
       type: [
         {
           type: mongoose.SchemaTypes.ObjectId,
-          ref: "Task",
+          ref: "ProjectTask",
         },
       ],
       default: [],
@@ -80,10 +80,12 @@ projectSchema.pre(/^find/, function (next) {
       $ne: true,
     },
   });
+  next();
 });
 
 projectSchema.pre(/^find/, function (next) {
   this.select("-__v");
+  next();
 });
 
 projectSchema.pre(/^find/, function (next) {
@@ -91,13 +93,7 @@ projectSchema.pre(/^find/, function (next) {
     path: "tasks",
     select: "title description creator assignee",
   });
-});
-
-projectSchema.pre(/^find/, function (next) {
-  this.populate({
-    path: "themes",
-    select: "title description",
-  });
+  next();
 });
 
 const Project = mongoose.model("Project", projectSchema);

@@ -2,6 +2,7 @@ const { Task } = require("../models/taskModel");
 const User = require("../models/userModel");
 const AppError = require("../utils/appError");
 const catchAsync = require("../utils/catchAsync");
+const excludeFields = require("../utils/excludeFields");
 const factory = require("./handleFactory");
 
 exports.getAll = factory.getAll(Task);
@@ -15,7 +16,7 @@ exports.updateOne = factory.updateOne(Task);
 exports.deleteOne = factory.deleteOne(Task);
 
 exports.restrictsFields = catchAsync(async (req, _, next) => {
-  const restrictedFields = ["creator", "isDeleted", "slug", "createdAt"];
+  const restrictedFields = excludeFields("Task");
   restrictedFields.forEach((field) => delete req.body[field]);
   next();
 });
