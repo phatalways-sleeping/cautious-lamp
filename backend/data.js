@@ -1,9 +1,7 @@
 const dotenv = require("dotenv");
 const mongoose = require("mongoose");
 const app = require("./app");
-const User = require("./models/userModel");
-// const users = require("./assets/usersData");
-const tasks = require("./assets/tasksData");
+const data = require("./assets/themesData");
 
 process.on("uncaughtException", (err) => {
   console.log(err.name, err.message);
@@ -27,9 +25,9 @@ mongoose.connect(DB).then(() => {
 const port = process.env.PORT || 3000;
 
 // Wrap your code in an async function
-async function saveDataAndStartServer(data) {
+async function saveDataAndStartServer(items) {
   try {
-    await Promise.all(data.map((e) => e.save()));
+    await Promise.all(items.map((e) => e.save()));
     console.log("Insert completed");
   } catch (err) {
     console.log(`Error happened: ${err}`);
@@ -38,7 +36,7 @@ async function saveDataAndStartServer(data) {
 
 // Call the async function
 // saveDataAndStartServer(users);
-saveDataAndStartServer(tasks);
+saveDataAndStartServer(data);
 
 app.listen(port, () => {
   console.log(`Server is listening at port ${port}`);
