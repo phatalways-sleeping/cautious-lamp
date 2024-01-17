@@ -1,4 +1,9 @@
-const { Task, CooperatedTask } = require("../models/taskModel");
+const {
+  Task,
+  CooperatedTask,
+  ThemeTask,
+  ProjectTask,
+} = require("../models/taskModel");
 
 module.exports = [
   new Task({
@@ -149,9 +154,10 @@ module.exports = [
     description: "Create a clutter-free environment to enhance productivity.",
     dueDate: new Date("2024-01-18"),
   }),
-  new CooperatedTask({
+  new ThemeTask({
     creator: "65a1a85cfd837a6b0806c57a", // Replace with a valid ObjectId
     assignee: "65a1a85cfd837a6b0806c57b",
+    theme: "65a6bf20a8be1a2f71f59874",
     scheduledDate: new Date("2024-01-17"),
     category: "Marketing", // Add a category
     notes: "", // Optional notes can be added here
@@ -178,9 +184,10 @@ module.exports = [
       "Plan blog posts, social media content, and other marketing materials.",
     dueDate: new Date("2024-01-20"),
   }),
-  new CooperatedTask({
+  new ProjectTask({
     creator: "65a1a85cfd837a6b0806c57a", // Replace with a valid ObjectId
     assignee: "65a1a85cfd837a6b0806c57b",
+    project: "65a6bee7cba0de3c2ff9bf00",
     scheduledDate: new Date("2024-01-24"),
     category: "Brainstorming", // Add a category
     title: "Conduct team brainstorming session for Q2 project ideas",
@@ -197,9 +204,10 @@ module.exports = [
     ],
     dueDate: new Date("2024-01-26"),
   }),
-  new CooperatedTask({
+  new ThemeTask({
     creator: "65a1a85cfd837a6b0806c57a", // Replace with a valid ObjectId
     assignee: "65a1a85cfd837a6b0806c57b",
+    theme: "65a6bf20a8be1a2f71f59873",
     scheduledDate: new Date("2024-01-21"),
     category: "SEO", // Add a category
     title: "Update website SEO to improve organic traffic",
