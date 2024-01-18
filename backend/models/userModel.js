@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const validator = require("validator");
 const bcrypt = require("bcrypt");
 const crypto = require("crypto");
+const Project = require("./projectModel");
 
 const userSchema = new mongoose.Schema(
   {
@@ -115,6 +116,30 @@ userSchema.methods.createPasswordToken = function () {
     .digest("hex");
   this.passwordResetTokenExpired = Date.now() + 10 * 60 * 1000;
   return resetToken;
+};
+
+userSchema.methods.projects = async function () {
+  // Get user's projects based on the given status
+  const projects = await Project.find(
+    {
+      colaborators: this._id,
+    },
+    {
+      title: true,
+      description: true,
+      manager: true,
+      colaborators: true,
+      complete: true,
+    },
+    {
+      sort: {
+        createdAt: -1,
+        complete: 1,
+      },
+    }
+  );
+
+  return projects;
 };
 
 const User = mongoose.model("User", userSchema);

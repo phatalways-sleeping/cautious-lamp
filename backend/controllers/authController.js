@@ -187,9 +187,9 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
 exports.deleteMe = catchAsync(async (req, res, _) => {
   const { id } = req.user;
 
-  await User.findByIdAndUpdate(id, { isDeleted: true });
+  await User.findByIdAndUpdate(id, { active: false });
 
-  res.status(200).json({ status: "success", data: null });
+  res.status(204).json({ status: "success", data: null });
 });
 
 exports.updatePassword = catchAsync(async (req, res, next) => {

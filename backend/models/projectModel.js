@@ -1,5 +1,7 @@
 const mongoose = require("mongoose");
 
+const { ProjectTask } = require("./taskModel");
+
 // A project contains multiple themes and multiple tasks
 const projectSchema = new mongoose.Schema(
   {
@@ -44,15 +46,6 @@ const projectSchema = new mongoose.Schema(
       type: mongoose.SchemaTypes.Boolean,
       default: false,
     },
-    tasks: {
-      type: [
-        {
-          type: mongoose.SchemaTypes.ObjectId,
-          ref: "ProjectTask",
-        },
-      ],
-      default: [],
-    },
     createdAt: {
       type: mongoose.SchemaTypes.Date,
       default: Date.now(),
@@ -73,6 +66,24 @@ const projectSchema = new mongoose.Schema(
   }
 );
 
+// Indexes
+projectSchema.index({
+  manager: 1,
+  title: 1,
+});
+
+// Virtuals
+projectSchema.virtual("tasks", {
+  ref: "ProjectTask",
+  localField: "_id",
+  foreignField: "project",
+  options: {
+    sort: {
+      createdAt: -1,
+    },
+  },
+});
+
 // Middlewares
 projectSchema.pre(/^find/, function (next) {
   this.find({
@@ -90,8 +101,8 @@ projectSchema.pre(/^find/, function (next) {
 
 projectSchema.pre(/^find/, function (next) {
   this.populate({
-    path: "tasks",
-    select: "title description creator assignee",
+    path: "colaborators",
+    select: "email",
   });
   next();
 });

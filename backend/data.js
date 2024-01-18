@@ -1,8 +1,8 @@
 const dotenv = require("dotenv");
 const mongoose = require("mongoose");
 const app = require("./app");
-const data = require("./assets/tasksData");
-const { Task } = require("./models/taskModel");
+const data = require("./assets/themesData");
+const Theme = require("./models/themeModel");
 
 process.on("uncaughtException", (err) => {
   console.log(err.name, err.message);
@@ -45,9 +45,8 @@ async function clearData(Model) {
 
 // Call the async function
 // saveData(users);
+// clearData(Theme);
 saveData(data);
-
-// clearData(Task);
 
 app.listen(port, () => {
   console.log(`Server is listening at port ${port}`);

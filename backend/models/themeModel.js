@@ -28,16 +28,6 @@ const themeSchema = new mongoose.Schema(
       type: mongoose.SchemaTypes.Boolean,
       default: false,
     },
-    tasks: {
-      type: [
-        {
-          type: mongoose.SchemaTypes.ObjectId,
-          required: true,
-          ref: "ThemeTask",
-        },
-      ],
-      default: [],
-    },
     createdAt: {
       type: mongoose.SchemaTypes.Date,
       default: Date.now(),
@@ -59,6 +49,25 @@ const themeSchema = new mongoose.Schema(
   }
 );
 
+// Indexes
+themeSchema.index({
+  project: 1,
+  title: 1,
+});
+
+// Virtuals
+themeSchema.virtual("tasks", {
+  ref: "ThemeTask",
+  localField: "_id",
+  foreignField: "theme",
+  options: {
+    sort: {
+      createdAt: -1,
+    },
+  },
+});
+
+// Middlewares
 themeSchema.pre(/^find/, function (next) {
   this.find({
     isDeleted: {
@@ -70,15 +79,6 @@ themeSchema.pre(/^find/, function (next) {
 
 themeSchema.pre(/^find/, function (next) {
   this.select("-createdAt -__v");
-  next();
-});
-
-// For finding contributors of the current theme
-themeSchema.pre(/^find/, function (next) {
-  this.populate({
-    path: "tasks",
-    select: "creator assignee",
-  });
   next();
 });
 

@@ -4,39 +4,36 @@ const AppError = require("../utils/appError");
 const APIFeatures = require("../utils/apiFeatures");
 const Theme = require("../models/themeModel");
 const excludeFields = require("../utils/excludeFields");
-const { ProjectTask, ThemeTask } = require("../models/taskModel");
+const { ProjectTask, ThemeTask, Task } = require("../models/taskModel");
 
-exports.restrict = (...roles) =>
-  catchAsync(async (req, _, next) => {
-    const { id } = req.user;
-    const { projectId } = req.params;
+const restrict = async (userId, projectId, isManager) => {
+  const options = {
+    colaborators: userId,
+  };
 
-    const project = await Project.findById(projectId);
+  if (isManager) {
+    options.manager = userId;
+  }
 
-    if (!project) {
-      return next(new AppError(`No document found with ID: ${projectId}`, 404));
-    }
+  const project = await Project.findById(projectId, null, options);
 
-    const verifyManager = roles.includes("manager") && project.manager === id;
-    const verifyColaborator =
-      roles.includes("colaborator") && project.colaborators.includes(id);
-
-    if (!verifyManager && !verifyColaborator) {
-      return next(
-        new AppError(
-          "You do not have the permission to perform this action",
-          400
-        )
-      );
-    }
-
-    req.project = project;
-
-    return next();
-  });
+  return project;
+};
 
 exports.getOne = catchAsync(async (req, res, next) => {
-  const { project } = req;
+  const { id } = req.user;
+  const { projectId } = req.params;
+
+  const project = restrict(id, projectId, true);
+
+  if (!project) {
+    return next(
+      new AppError(
+        `Either no document found or you have no permission to access. ID: ${projectId}`,
+        404
+      )
+    );
+  }
 
   return res.status(200).json({ status: "success", data: project });
 });
@@ -108,206 +105,181 @@ exports.createOne = catchAsync(async (req, res, _) => {
 });
 
 exports.updateOne = catchAsync(async (req, res, next) => {
-  // To update the information of the project, you must be the manager
   const { id } = req.user;
-  const { project } = req;
 
-  if (project.manager !== id) {
-    return next(
-      new AppError("You do not have the permission to perform this action", 400)
+  const { projectId } = req.params;
+
+  const restrictedFields = excludeFields("Project");
+
+  restrictedFields.forEach((field) => delete req.body[field]);
+
+  const { tasks, options } = req.body;
+
+  req.body.tasks = undefined;
+
+  req.body.options = undefined;
+
+  const updateOptions = { ...req.body };
+
+  let taskIds = tasks; // initially default to delete mode if needed
+
+  if (taskIds && options.add) {
+    excludeFields("Task").forEach((field) =>
+      tasks.forEach((task) => {
+        if (typeof task === "string" || task instanceof String) return;
+        delete task[field];
+      })
     );
+    taskIds = await Promise.all(
+      tasks.map((task) => {
+        if (typeof task === "string" || task instanceof String) {
+          // Make sure the creator of the task and its assignee,
+          // if exists, must be within the project
+          return Task.findByIdAndUpdate(
+            task,
+            {
+              kind: "ProjectTask",
+              project: projectId,
+            },
+            { overwriteDiscriminatorKey: true, new: true }
+          );
+        }
+        return ProjectTask.create({
+          ...task,
+          creator: id,
+        });
+      })
+    );
+    updateOptions.$push = {
+      colaborators: {
+        $each: taskIds,
+      },
+    };
+  } else if (taskIds) {
+    // else: user wants to remove these taskIds from the current project
+    updateOptions.$pull = {
+      colaborators: {
+        $in: taskIds,
+      },
+    };
   }
 
-  // Manager can only update the title, description,
-  if (req.body.title) {
-    project.title = req.body.title;
-  }
-  if (req.body.description) {
-    project.description = req.body.description;
-  }
-
-  await project.save({
+  const project = await Project.findByIdAndUpdate(projectId, updateOptions, {
+    new: true,
     runValidators: true,
   });
 
-  return res.status(201).json({
-    status: "success",
-    data: project,
-  });
-});
-
-exports.addColaborators = catchAsync(async (req, res, _) => {
-  // To update the information of the project, you must be the manager
-  const { project } = req;
-
-  project.colaborators = [...project.colaborators, ...req.body.data];
-
-  await project.save({
-    runValidators: true,
-  });
-
-  return res.status(201).json({
-    status: "success",
-    data: project,
-  });
-});
-
-exports.removeColaborators = catchAsync(async (req, res, _) => {
-  // To update the information of the project, you must be the manager
-  const { id } = req.user;
-  const { project } = req;
-
-  let toRemoveColaborators = req.body.data;
-
-  // 1) The manager cannot remove himself
-  toRemoveColaborators = toRemoveColaborators.filter((member) => member !== id);
-  // 2) Filter out
-  project.colaborators = project.colaborators.filter(
-    (member) => !toRemoveColaborators.includes(member)
-  );
-
-  await project.save({
-    runValidators: true,
-  });
-
-  return res.status(201).json({
-    status: "success",
-    data: project,
-  });
-});
-
-exports.deleteProject = catchAsync(async (req, res, _) => {
-  const { id, tasks } = req.project;
-
-  // 1) Find all the tasks of the project and delete
-  const docs = await Promise.all(
-    tasks.map((taskId) => ProjectTask.findById(taskId))
-  );
-  await Promise.all(
-    docs.map((doc) => {
-      doc.isDeleted = true;
-      return doc.save();
-    })
-  );
-  // 2) Find all the themes of the project,
-  const themes = await Theme.find({
-    project: id,
-  });
-  await Promise.all(
-    themes.forEach(async (theme) => {
-      // For each task, mark isDeleted
-      await Promise.all(
-        theme.tasks.forEach((taskId) =>
-          ThemeTask.findByIdAndUpdate(taskId, {
-            isDeleted: true,
-          })
-        )
-      );
-      // Mark the theme isDeleted
-      theme.isDeleted = true;
-      theme.save();
-    })
-  );
-  // 3) Delete the project
-  await Project.findByIdAndUpdate(id, { isDeleted: true });
-
-  res.status(204).json({
-    status: "success",
-    data: null,
-  });
-});
-
-exports.addTasks = catchAsync(async (req, res, _) => {
-  // Only manager and colaborators within a project are able to
-  // add tasks. These tasks inherit Task, called ProjectTask
-  const { id } = req.project;
-  const restrictedFields = excludeFields("Task");
-  const taskObjs = req.body.data;
-  taskObjs.forEach((taskObj) => {
-    restrictedFields.forEach((field) => delete taskObj[field]);
-  });
-
-  const docs = await Promise.all(
-    taskObjs.map((taskObj) => ProjectTask.create({ ...taskObj, project: id }))
-  );
-
-  res.status(201).json({
-    status: "success",
-    results: docs.length,
-    data: {
-      data: docs,
-    },
-  });
-});
-
-exports.deleteTasks = catchAsync(async (req, res, next) => {
-  // Only manager and colaborators within a project are able to
-  // remove tasks. These tasks inherit Task, called ProjectTask
-  const { project } = req;
-  const ids = req.body.data;
-
-  if (!ids.every((id) => project.tasks.includes(id))) {
-    return next(new AppError(`Invalid task ids: ${ids}`), 400);
+  if (!project) {
+    return next(new AppError(`No document found with ID: ${projectId}`, 404));
   }
-
-  await Promise.all(
-    ids.map((id) => ProjectTask.findByIdAndUpdate(id, { isDeleted: true }))
-  );
-
-  project.tasks = project.tasks.filter((task) => !ids.includes(task));
-
-  await project.save();
 
   return res.status(200).json({
-    status: "success",
+    status: 200,
     data: project,
   });
 });
 
-exports.moveTask = catchAsync(async (req, res, next) => {
-  // Move a task from a project (ProjectTask) to
-  // a theme (ThemeTask)
-  const { project } = req;
-  const { taskId, themeId } = req.body;
+exports.updateMembers = catchAsync(async (req, res, next) => {
+  // Only managers could only add members to the existing project
+  const { id } = req.user;
 
-  if (!project.tasks.includes(taskId)) {
-    return next(new AppError(`Invalid task id ${taskId}`), 400);
-  }
+  const { projectId } = req.params;
 
-  const theme = await Theme.findById(themeId);
+  const { colaborators, newManager, options } = req.body;
 
-  if (!theme) {
-    return next(new AppError(`No document found with ID: ${themeId}`), 404);
-  }
-
-  if (theme.project !== project.id) {
+  if (!colaborators && !newManager) {
     return next(
-      new AppError(`Cannot move task to a theme outside of a project`, 400)
+      new AppError(
+        `Either colaborators or newManager must be assigned to operate`,
+        400
+      )
     );
   }
 
-  if (theme.tasks.includes(taskId)) {
+  if (!colaborators && options) {
     return next(
-      new AppError(`Theme ${themeId} has already had task ${taskId}`, 400)
+      new AppError(
+        `Missing colaborators when options is assigned to a value`,
+        400
+      )
     );
   }
 
-  const task = await ProjectTask.findByIdAndUpdate(
-    taskId,
+  const updateObjects = {};
+
+  if (options && options.add) {
+    updateObjects.$push = {
+      colaborators: {
+        $each: colaborators,
+      },
+    };
+  } else if (colaborators) {
+    updateObjects.$pull = {
+      colaborators: {
+        $in: colaborators,
+      },
+    };
+  }
+
+  if (newManager) {
+    const updatedcolaborators = updateObjects.$push
+      ? [...updateObjects.$push.colaborators.$each, newManager]
+      : [newManager];
+    updateObjects.$push.colaborators.$each = updatedcolaborators;
+  }
+
+  const project = await Project.findOneAndUpdate(
     {
-      kind: "ThemeTask",
-      theme: themeId,
-      project: undefined,
+      _id: projectId,
+      manager: id,
     },
+    updateObjects,
     {
-      overwriteDiscriminatorKey: true,
       new: true,
       runValidators: true,
     }
   );
 
+  if (!project) {
+    return next(
+      new AppError(
+        `Either no document found with ID: ${projectId} or you do not have permission to perform this action`,
+        404
+      )
+    );
+  }
+
   return res.status(200).json({
     status: "success",
-    data: task,
+    data: project,
+  });
+});
+
+exports.deleteProject = catchAsync(async (req, res, next) => {
+  const { id } = req.user;
+
+  const { projectId } = req.params;
+
+  const project = await Project.findOne(
+    {
+      _id: projectId,
+      manager: id,
+    },
+    { isDeleted: true },
+    { new: true }
+  );
+
+  if (!project) {
+    return next(
+      new AppError(
+        `Either no document found with ID: ${projectId} or you do not have the permission`,
+        404
+      )
+    );
+  }
+
+  return res.status(204).json({
+    status: "success",
+    data: null,
   });
 });

@@ -12,36 +12,24 @@ const router = express.Router({
 // Protect
 router.use(authController.protect);
 
-// Merged routes
-router.use("/:projectId/themes", themeRoutes);
-router.use("/:projectId/tasks", taskRoutes);
-
 // Normal
 // Create
 router.post("/", projectController.createOne);
+
 // Read
 router.get("/", projectController.getAll);
 
-router.use("/:projectId", projectController.restrict("colaborator")); // Restrict to project's members
+// Merged routes
+router.use("/:projectId/themes", themeRoutes);
+
+router.use("/:projectId/tasks", taskRoutes);
 
 router.get("/:projectId", projectController.getOne);
 
-router.patch("/:projectId/add-tasks", projectController.addTasks);
-
-router.patch("/:projectId/remove-tasks", projectController.deleteTasks);
-
-router.patch("/:projectId/move-task", projectController.moveTask);
-
-router.use("/:projectId", projectController.restrict("manager")); // Restrict to manager only
 // Update
 router.put("/:projectId", projectController.updateOne);
 
-router.patch("/:projectId/add-members", projectController.addColaborators);
-
-router.patch(
-  "/:projectId/remove-members",
-  projectController.removeColaborators
-);
+router.patch("/:projectId/colaborators", projectController.updateMembers);
 
 // Delete
 router.delete("/:projectId", projectController.deleteProject);

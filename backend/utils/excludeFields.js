@@ -9,7 +9,7 @@ module.exports = (model) => {
     case "Task":
       return [...mustExcludeFields, "slug"];
     case "Theme":
-      return [...mustExcludeFields];
+      return [...mustExcludeFields, "project", "creator"];
     default:
       return [...mustExcludeFields];
   }
