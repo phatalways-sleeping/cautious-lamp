@@ -112,6 +112,7 @@ const taskSchema = new mongoose.Schema(
 taskSchema.index({
   slug: 1,
 });
+
 // Search for category and priority
 taskSchema.index({
   category: 1,

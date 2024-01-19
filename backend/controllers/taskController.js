@@ -186,15 +186,19 @@ exports.restrictsFields = catchAsync(async (req, _, next) => {
   next();
 });
 
-exports.setUpTodayTasks = catchAsync(async (req, _, next) => {
-  req.query = {
-    ...req.query,
-    scheduledDate: {
-      $eq: Date.now(),
-    },
-  };
-  next();
-});
+exports.filterTasks = (today = true) =>
+  catchAsync(async (req, _, next) => {
+    if (today) {
+      req.query.scheduledDate = {
+        $eq: Date.now(),
+      };
+    } else {
+      req.query.dueDate = {
+        lt: Date.now(),
+      };
+    }
+    next();
+  });
 
 exports.setUpTop5NearestTasks = catchAsync(async (req, _, next) => {
   req.query = {
