@@ -1,8 +1,16 @@
 const express = require("express");
 
 const themeController = require("../controllers/themeController");
+const authController = require("../controllers/authController");
+
+const taskRoutes = require("./taskRoutes");
 
 const router = express.Router();
+
+// Protect
+router.use(authController.protect);
+
+router.use("/:themeId/tasks", taskRoutes);
 
 // Create
 router.post("/", themeController.createOne);

@@ -4,7 +4,26 @@ const AppError = require("../utils/appError");
 const APIFeatures = require("../utils/apiFeatures");
 const Theme = require("../models/themeModel");
 const excludeFields = require("../utils/excludeFields");
-const { ProjectTask, ThemeTask, Task } = require("../models/taskModel");
+const { ProjectTask, Task } = require("../models/taskModel");
+
+exports.restrictAccessViaProject = catchAsync(async (req, _, next) => {
+  const { id } = req.user;
+
+  const { projectId } = req.params;
+
+  const project = await Project.findOne({
+    _id: projectId,
+    colaborators: id,
+  });
+
+  if (!project) {
+    return next(
+      new AppError(`You do not have permission to perform this action`, 400)
+    );
+  }
+
+  return next();
+});
 
 const restrict = async (userId, projectId, isManager) => {
   const options = {
@@ -105,66 +124,13 @@ exports.createOne = catchAsync(async (req, res, _) => {
 });
 
 exports.updateOne = catchAsync(async (req, res, next) => {
-  const { id } = req.user;
-
   const { projectId } = req.params;
 
   const restrictedFields = excludeFields("Project");
 
   restrictedFields.forEach((field) => delete req.body[field]);
 
-  const { tasks, options } = req.body;
-
-  req.body.tasks = undefined;
-
-  req.body.options = undefined;
-
-  const updateOptions = { ...req.body };
-
-  let taskIds = tasks; // initially default to delete mode if needed
-
-  if (taskIds && options.add) {
-    excludeFields("Task").forEach((field) =>
-      tasks.forEach((task) => {
-        if (typeof task === "string" || task instanceof String) return;
-        delete task[field];
-      })
-    );
-    taskIds = await Promise.all(
-      tasks.map((task) => {
-        if (typeof task === "string" || task instanceof String) {
-          // Make sure the creator of the task and its assignee,
-          // if exists, must be within the project
-          return Task.findByIdAndUpdate(
-            task,
-            {
-              kind: "ProjectTask",
-              project: projectId,
-            },
-            { overwriteDiscriminatorKey: true, new: true }
-          );
-        }
-        return ProjectTask.create({
-          ...task,
-          creator: id,
-        });
-      })
-    );
-    updateOptions.$push = {
-      colaborators: {
-        $each: taskIds,
-      },
-    };
-  } else if (taskIds) {
-    // else: user wants to remove these taskIds from the current project
-    updateOptions.$pull = {
-      colaborators: {
-        $in: taskIds,
-      },
-    };
-  }
-
-  const project = await Project.findByIdAndUpdate(projectId, updateOptions, {
+  const project = await Project.findByIdAndUpdate(projectId, req.body, {
     new: true,
     runValidators: true,
   });

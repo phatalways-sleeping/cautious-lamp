@@ -10,6 +10,9 @@ const router = express.Router({
 });
 
 router.use(authController.protect);
+
+router.use(tasksController.assignModel);
+
 // Alias routes
 // Nearest tasks
 router.get(
@@ -22,12 +25,12 @@ router.get("/today", tasksController.setUpTodayTasks, tasksController.getAll);
 // Mark a tasks as complete or incomplete (toggle)
 router.get(
   "/:id/mark-complete",
-  tasksController.setUpTaskCompletion('done'),
+  tasksController.setUpTaskCompletion("done"),
   tasksController.updateOne
 );
 router.get(
   "/:id/mark-incomplete",
-  tasksController.setUpTaskCompletion('in-progress'),
+  tasksController.setUpTaskCompletion("in-progress"),
   tasksController.updateOne
 );
 // Normal

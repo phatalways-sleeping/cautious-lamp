@@ -30,6 +30,7 @@ const taskSchema = new mongoose.Schema(
           minlength: [10, "A step's title must be at least 10 characters"],
           maxlength: [100, "A step's title must be at most 100 characters"],
           trim: true,
+          unique: true,
         },
         description: mongoose.SchemaTypes.String,
         notes: mongoose.SchemaTypes.String,
@@ -152,7 +153,7 @@ taskSchema.pre(/^find/, function (next) {
 });
 
 taskSchema.pre(/^find/, function (next) {
-  this.select("-__v");
+  this.select("-__v -steps._id -steps.id");
   return next();
 });
 

@@ -35,8 +35,8 @@ router.get("/me", userController.getMe);
 // Restrict
 router.use(authController.restrict("admin"));
 
-router.get("/", userController.getAll);
+// router.get("/", userController.getAll);
 
-router.get("/:id", userController.getOne);
+// router.get("/:id", userController.getOne);
 
 module.exports = router;

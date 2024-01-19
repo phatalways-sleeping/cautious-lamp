@@ -20,9 +20,17 @@ router.post("/", projectController.createOne);
 router.get("/", projectController.getAll);
 
 // Merged routes
-router.use("/:projectId/themes", themeRoutes);
+router.use(
+  "/:projectId/themes",
+  projectController.restrictAccessViaProject,
+  themeRoutes
+);
 
-router.use("/:projectId/tasks", taskRoutes);
+router.use(
+  "/:projectId/tasks",
+  projectController.restrictAccessViaProject,
+  taskRoutes
+);
 
 router.get("/:projectId", projectController.getOne);
 

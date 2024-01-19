@@ -4,7 +4,10 @@ const AppError = require("../utils/appError");
 
 exports.getAll = (Model) =>
   catchAsync(async (req, res, _) => {
-    const features = new APIFeatures(Model.find(), req.query)
+    const features = new APIFeatures(
+      Model.find(),
+      req.query
+    )
       .filter()
       .sort()
       .limitFields()
