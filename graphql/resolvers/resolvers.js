@@ -1,5 +1,5 @@
-import queriesResolvers from "./queries";
-import mutationsResolvers from "./mutations";
+import queriesResolvers from "./queries.js";
+import mutationsResolvers from "./mutations.js";
 
 const resolvers = {
     Query: queriesResolvers,
