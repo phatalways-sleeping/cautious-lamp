@@ -1,40 +1,47 @@
-import { ApolloServerErrorCode } from "@apollo/server/errors";
-
-const ErrorLogger = (function () {
-  function ErrorLogger(formattedError, error, { debugMode }) {
+export default class ErrorLogger {
+  constructor(formattedError, error, { debugMode }) {
     this.formattedError = formattedError;
     this.error = error;
     this.debugMode = debugMode;
   }
 
-  ErrorLogger.prototype.format = function () {
-    const message = map.call(this);
+  format() {
+    const message = this.map();
 
-    if (this.debugMode) return {
-      ...this.formattedError,
-      ...this.error
-    };
+    if (this.debugMode) {
+      return {
+        ...this.formattedError,
+        ...this.error,
+      };
+    }
 
     return message;
-  };
+  }
 
-  function map() {
-    const { code, response } = this.formattedError.extensions;
+  map() {
+    const { message } = this.formattedError;
 
-    const { status, message, error } = response.body;
+    const { extensions } = this.formattedError;
+
+    if (this.debugMode && !extensions.response) {
+      // Internal GraphQL errors
+      return this.formattedError;
+    }
+
+    const { code } = extensions;
 
     const payload = {
-      status,
       code,
       message,
     };
 
-    if (this.debugMode) payload.error = error;
+    if (extensions.response && extensions.response.body) {
+      const { status, error } = extensions.response.body;
+      payload.message = extensions.response.body.message;
+      payload.status = status;
+      if (this.debugMode) payload.error = error;
+    }
 
     return payload;
   }
-
-  return ErrorLogger;
-})();
-
-export default ErrorLogger;
+}

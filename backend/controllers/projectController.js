@@ -27,14 +27,16 @@ exports.restrictAccessViaProject = catchAsync(async (req, _, next) => {
 
 const restrict = async (userId, projectId, isManager) => {
   const options = {
-    colaborators: userId,
+    colaborators: {
+      $in: userId,
+    },
   };
 
   if (isManager) {
     options.manager = userId;
   }
 
-  const project = await Project.findById(projectId, null, options);
+  const project = await Project.findById(projectId, null, {});
 
   return project;
 };
@@ -43,9 +45,20 @@ exports.getOne = catchAsync(async (req, res, next) => {
   const { id } = req.user;
   const { projectId } = req.params;
 
-  const project = restrict(id, projectId, true);
+  const features = new APIFeatures(
+    Project.findById(projectId, null, {
+      colaborators: id,
+    }),
+    req.query
+  )
+    .filter()
+    .sort()
+    .limitFields()
+    .paginate();
 
-  if (!project) {
+  const results = await features.query;
+
+  if (!results) {
     return next(
       new AppError(
         `Either no document found or you have no permission to access. ID: ${projectId}`,
@@ -53,6 +66,8 @@ exports.getOne = catchAsync(async (req, res, next) => {
       )
     );
   }
+
+  const project = results.length === 0 ? null : results[0];
 
   return res.status(200).json({ status: "success", data: project });
 });

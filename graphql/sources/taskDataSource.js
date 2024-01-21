@@ -1,3 +1,3 @@
 import { RESTDataSource } from "@apollo/datasource-rest";
 
-export class TaskDataSource extends RESTDataSource {}
+export default class TaskDataSource extends RESTDataSource {}

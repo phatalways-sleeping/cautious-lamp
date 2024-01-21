@@ -1,8 +1,11 @@
+/* eslint-disable import/extensions */
 import { startStandaloneServer } from "@apollo/server/standalone";
 import dotenv from "dotenv";
-import { UserDataSource } from "./sources/userDataSource.js";
-import { AuthDataSource } from "./sources/authDataSource.js";
+import UserDataSource from "./sources/userDataSource.js";
+import AuthDataSource from "./sources/authDataSource.js";
 import server from "./server.js";
+import extractToken from "./utils/extractToken.js";
+import ProjectDataSource from "./sources/projectDataSource.js";
 
 process.on("uncaughtException", (err) => {
   console.log(err.name, err.message, err.stack);
@@ -19,14 +22,16 @@ const port = process.env.PORT || 4000;
 const { url } = await startStandaloneServer(server, {
   listen: { port },
   context: async ({ req, _ }) => {
-    const { token } = req;
+    const token = extractToken(req.headers);
     const { cache } = server;
-    const userAPI = new UserDataSource({ cache });
+    const userAPI = new UserDataSource({ cache, token });
+    const projectAPI = new ProjectDataSource({ cache, token });
     const authAPI = new AuthDataSource({ cache });
     return {
-      token: token,
+      token,
       dataSources: {
         userAPI,
+        projectAPI,
         authAPI,
       },
     };

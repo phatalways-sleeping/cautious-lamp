@@ -1,8 +1,7 @@
 import { RESTDataSource } from "@apollo/datasource-rest";
-import { GraphQLError } from "graphql";
 
-export class AuthDataSource extends RESTDataSource {
-  baseURL = "http://localhost:3000";
+export default class AuthDataSource extends RESTDataSource {
+  baseURL = process.env.BASE_URL;
 
   async login({ email, password }) {
     const response = await this.post(`/api/v1/users/login`, {
@@ -14,7 +13,8 @@ export class AuthDataSource extends RESTDataSource {
 
     return {
       status: "success",
-      data: { token: response.token },
+      token: response.token,
+      user: response.data.user,
     };
   }
 
@@ -29,14 +29,26 @@ export class AuthDataSource extends RESTDataSource {
 
     return {
       status: "success",
-      data: {
-        token: response.token,
-        user: { email: response.data.user.email, id: response.data.user.id },
-      },
+      token: response.token,
+      user: response.data.user,
     };
   }
 
-  async forgetPassword(email) {}
+  async forgetPassword(email) {
+    const response = this.post("", {
+      body: {
+        email,
+      },
+    });
+  }
 
-  async resetPassword(resetToken, password, passwordConfirm) {}
+  async resetPassword(resetToken, password, passwordConfirm) {
+    const response = this.post("", {
+      body: {
+        resetToken,
+        password,
+        passwordConfirm,
+      },
+    });
+  }
 }
