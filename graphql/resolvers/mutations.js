@@ -60,10 +60,20 @@ const mutationsResolvers = {
     const { themeAPI } = contextValue.dataSources;
     return themeAPI.deleteTheme({ themeId, projectId });
   },
-  deletePersonalTask: async (_, args, contextValue, __) => {
-    const { taskId } = args;
+  createTask: async (_, args, contextValue, __) => {
+    const { type, body, taskObject } = args;
     const { taskAPI } = contextValue.dataSources;
-    return taskAPI.deletePersonalTask({ taskId });
+    return taskAPI.createTask({ type, body, taskObject });
+  },
+  updateTask: async (_, args, contextValue, __) => {
+    const { type, body, updateObject } = args;
+    const { taskAPI } = contextValue.dataSources;
+    return taskAPI.updateTask({ type, body, updateObject });
+  },
+  deleteTask: async (_, args, contextValue, __) => {
+    const { type, body } = args;
+    const { taskAPI } = contextValue.dataSources;
+    return taskAPI.deleteTask({ type, body });
   },
 };
 

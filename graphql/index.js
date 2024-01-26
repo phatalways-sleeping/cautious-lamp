@@ -7,6 +7,7 @@ import server from "./server.js";
 import extractToken from "./utils/extractToken.js";
 import ProjectDataSource from "./sources/projectDataSource.js";
 import ThemeDataSource from "./sources/themeDataSource.js";
+import TaskDataSource from "./sources/taskDataSource.js";
 
 process.on("uncaughtException", (err) => {
   console.log(err.name, err.message, err.stack);
@@ -28,7 +29,7 @@ const { url } = await startStandaloneServer(server, {
     const userAPI = new UserDataSource({ cache, token });
     const projectAPI = new ProjectDataSource({ cache, token });
     const themeAPI = new ThemeDataSource({ cache, token });
-    const taskAPI = new ProjectDataSource({ cache, token });
+    const taskAPI = new TaskDataSource({ cache, token });
     const authAPI = new AuthDataSource({ cache });
     return {
       token,

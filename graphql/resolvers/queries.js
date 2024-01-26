@@ -33,10 +33,20 @@ const queriesResolvers = {
       themeId,
     });
   },
+  task: async (_, args, contextValue, __) => {
+    const { taskAPI } = contextValue.dataSources;
+    const { query, type, body } = args;
+    return taskAPI.getTask({
+      query,
+      type,
+      body,
+    });
+  },
   tasks: async (_, args, contextValue, __) => {
     const { taskAPI } = contextValue.dataSources;
-    const { query } = args;
-    return taskAPI.getProjects({
+    const { type, query } = args;
+    return taskAPI.getTasks({
+      type,
       query,
     });
   },

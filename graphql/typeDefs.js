@@ -30,7 +30,7 @@ const typeDefs = `#graphql
 
     type TaskStep {
         title: String!,
-        isCompleted: Boolean!,
+        isCompleted: Boolean,
     }
   
     interface Task {
@@ -68,7 +68,9 @@ const typeDefs = `#graphql
 
     type ThemeTask implements Task & Unique {
         id: ID!,
+        assignee: ID!,
         theme: Theme!,
+        project: Project!,
         creator: User!,
         title: String!,
         description: String,
@@ -87,6 +89,7 @@ const typeDefs = `#graphql
     type ProjectTask implements Task & Unique {
         id: ID!,
         project: Project!,
+        assignee: ID!,
         creator: User!,
         title: String!,
         description: String,
@@ -101,6 +104,8 @@ const typeDefs = `#graphql
         dueDate: String!,
         late: Boolean!,
     }
+
+    union TaskUnion = PersonalTask | ThemeTask | ProjectTask
 
     ###########################################
 
@@ -148,6 +153,13 @@ const typeDefs = `#graphql
         theme: Theme,
     }
 
+    # Response of Task Operation
+    type TaskQueryResponse implements QueryResponse {
+        status: String!,
+        # User information
+        task: TaskUnion,
+    }
+
     type MultipleProjectsQueryResponse implements QueryResponse & MulitpleResultsResponse {
         status: String!,
         results: Int!,
@@ -163,7 +175,7 @@ const typeDefs = `#graphql
     type MulitpleTasksQueryResponse implements QueryResponse & MulitpleResultsResponse {
         status: String!,
         results: Int!,
-        tasks: [Task!]!,
+        tasks: [TaskUnion!]!,
     }
 
     ############################################
@@ -183,7 +195,7 @@ const typeDefs = `#graphql
     # Response of Task-related Operations: updateTask
     type TaskMutationResponse implements MutationResponse {
         status: String!,
-        task: Task,
+        task: TaskUnion,
     }
 
     # Response of Project-related Operations
@@ -215,6 +227,12 @@ const typeDefs = `#graphql
         lt: FilterObjectInt,
         eqStr: FilterObjectString,
         eqNum: FilterObjectInt,
+    }
+
+    input TaskAdditionalInformationObject {
+        taskId: ID,
+        projectId: ID,
+        themeId: ID,
     }
 
     input RequestQueryObject {
@@ -262,13 +280,42 @@ const typeDefs = `#graphql
         themes: [ThemeCreateObject!]
     }
 
+    input TaskCreateObject {
+        title: String!,
+        description: String,
+        category: String!,
+        dueDate: String!,
+        priority: String,
+    }
+
+    input TaskStepInput {
+        title: String!,
+        isCompleted: Boolean
+    }
+
+    input TaskUpdateObject {
+        title: String,
+        description: String,
+        notes: String,
+        attachments: [String!],
+        scheduledDate: String,
+        category: String,
+        completion: Int,
+        priority: String,
+        status: String,
+        dueDate: String,
+        steps: [TaskStepInput!],
+        options: UpdateOptions,
+    }
+
     type Query {
         me: UserQueryResponse!,
         project(projectId: ID!): ProjectQueryResponse!,
         projects(query: RequestQueryObject): MultipleProjectsQueryResponse!,
         themes(projectId: ID!, query: RequestQueryObject): MulitpleThemesQueryResponse!,
         theme(themeId: ID!, projectId: ID!): ThemeQueryResponse!,
-        tasks(query: RequestQueryObject): MulitpleTasksQueryResponse!,
+        tasks(type: String!, query: RequestQueryObject): MulitpleTasksQueryResponse!,
+        task(type: String!, body: TaskAdditionalInformationObject!): TaskQueryResponse!,
     }
 
     type Mutation {
@@ -282,8 +329,9 @@ const typeDefs = `#graphql
         createTheme(projectId: ID!, body: ThemeCreateObject!): ThemeMutationResponse!,
         updateTheme(projectId:ID!, themeId: ID!, body: ThemeUpdateObject!): ThemeMutationResponse!,
         deleteTheme(projectId:ID!, themeId: ID!): ThemeMutationResponse!,
-        updateTask(id: ID!): TaskMutationResponse!,
-        deletePersonalTask(taskId: ID!): TaskMutationResponse!,
+        createTask(type:String!, body: TaskAdditionalInformationObject, taskObject: TaskCreateObject!): TaskMutationResponse!,
+        updateTask(type:String!, body: TaskAdditionalInformationObject!, updateObject: TaskUpdateObject!): TaskMutationResponse!,
+        deleteTask(type:String!, body: TaskAdditionalInformationObject!): TaskMutationResponse!,
     }
 `;
 
