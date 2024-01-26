@@ -32,11 +32,11 @@ router.patch("/changePassword", authController.updatePassword);
 
 router.get("/me", userController.getMe);
 
+router.get("/:id", userController.getOne);
+
 // Restrict
 router.use(authController.restrict("admin"));
 
 // router.get("/", userController.getAll);
-
-// router.get("/:id", userController.getOne);
 
 module.exports = router;

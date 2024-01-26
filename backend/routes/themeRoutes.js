@@ -5,7 +5,9 @@ const authController = require("../controllers/authController");
 
 const taskRoutes = require("./taskRoutes");
 
-const router = express.Router();
+const router = express.Router({
+  mergeParams: true,
+});
 
 // Protect
 router.use(authController.protect);

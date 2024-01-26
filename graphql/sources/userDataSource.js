@@ -35,4 +35,12 @@ export default class UserDataSource extends RESTDataSource {
       passwordChangedAt: response.data.user.passwordChangedAt,
     };
   }
+
+  async getUser({ id }) {
+    const response = await this.get(`/api/v1/users/${id}`, {
+      headers: constructHeaders({ token: this.token }),
+    });
+
+    return response.data.data;
+  }
 }

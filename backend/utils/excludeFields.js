@@ -5,7 +5,7 @@ module.exports = (model) => {
     case "User":
       return [...mustExcludeFields, "createdAt"];
     case "Project":
-      return [...mustExcludeFields, "creator", "complete", "tasks", "options"];
+      return [...mustExcludeFields, "creator", "tasks",];
     case "Task":
       return [...mustExcludeFields, "slug"];
     case "Theme":

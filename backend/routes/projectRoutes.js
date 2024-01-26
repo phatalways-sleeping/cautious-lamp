@@ -37,7 +37,7 @@ router.get("/:projectId", projectController.getOne);
 // Update
 router.put("/:projectId", projectController.updateOne);
 
-router.patch("/:projectId/colaborators", projectController.updateMembers);
+// router.patch("/:projectId/colaborators", projectController.updateMembers);
 
 // Delete
 router.delete("/:projectId", projectController.deleteProject);

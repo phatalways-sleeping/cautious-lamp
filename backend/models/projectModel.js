@@ -99,13 +99,13 @@ projectSchema.pre(/^find/, function (next) {
   next();
 });
 
-projectSchema.pre(/^find/, function (next) {
-  this.populate({
-    path: "colaborators",
-    select: "email",
-  });
-  next();
-});
+// projectSchema.pre(/^find/, function (next) {
+//   this.populate({
+//     path: "colaborators",
+//     select: "email",
+//   });
+//   next();
+// });
 
 const Project = mongoose.model("Project", projectSchema);
 

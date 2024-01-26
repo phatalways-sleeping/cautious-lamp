@@ -1,3 +1,5 @@
+const mongoose = require("mongoose");
+
 const catchAsync = require("../utils/catchAsync");
 const Project = require("../models/projectModel");
 const AppError = require("../utils/appError");
@@ -111,7 +113,7 @@ exports.createOne = catchAsync(async (req, res, _) => {
   if (!req.body.colaborators) {
     req.body.colaborators = [id];
   } else if (!req.body.colaborators.includes(id)) {
-    req.body.colaborators = [...req.colaborators, id];
+    req.body.colaborators = [...req.body.colaborators, id];
   }
   // 2) If manager is either undefined or null, set default to id
   req.body.manager = req.body.manager ?? id;
@@ -139,19 +141,65 @@ exports.createOne = catchAsync(async (req, res, _) => {
 });
 
 exports.updateOne = catchAsync(async (req, res, next) => {
+  // Only managers could only add members to the existing project
+  const { id } = req.user;
+
+  const { colaborators, newManager, options } = req.body;
+
   const { projectId } = req.params;
 
   const restrictedFields = excludeFields("Project");
 
   restrictedFields.forEach((field) => delete req.body[field]);
 
-  const project = await Project.findByIdAndUpdate(projectId, req.body, {
+  delete req.body.colaborators;
+  delete req.body.newManager;
+  delete req.body.options;
+
+  const updateObjects = { ...req.body };
+
+  const filterObject = { _id: projectId };
+
+  if (colaborators || newManager) {
+    if (colaborators && (!options || !options.add)) {
+      return next(
+        new AppError(`Missing options when colaborators are initiated`, 400)
+      );
+    }
+    filterObject.manager = id;
+    if (options.add) {
+      updateObjects.$addToSet = {
+        colaborators: {
+          $each: colaborators,
+        },
+      };
+    } else if (colaborators) {
+      updateObjects.$pull = {
+        colaborators: {
+          $in: colaborators,
+        },
+      };
+    }
+    if (newManager) {
+      const updatedcolaborators = updateObjects.$push
+        ? [...updateObjects.$push.colaborators.$each, newManager]
+        : [newManager];
+      updateObjects.$push.colaborators.$each = updatedcolaborators;
+    }
+  }
+
+  const project = await Project.findByIdAndUpdate(filterObject, updateObjects, {
     new: true,
     runValidators: true,
   });
 
   if (!project) {
-    return next(new AppError(`No document found with ID: ${projectId}`, 404));
+    return next(
+      new AppError(
+        `No document found with ID: ${projectId}. Please recheck your request body. You cannot\n1) Add or remove a person that is not a colaborator\n2) Update a non-existing project\n3) Change colaborators or manager when you are not the manager`,
+        404
+      )
+    );
   }
 
   return res.status(200).json({
@@ -160,81 +208,82 @@ exports.updateOne = catchAsync(async (req, res, next) => {
   });
 });
 
-exports.updateMembers = catchAsync(async (req, res, next) => {
-  // Only managers could only add members to the existing project
-  const { id } = req.user;
+// exports.updateMembers = catchAsync(async (req, res, next) => {
+//   // Only managers could only add members to the existing project
+//   const { id } = req.user;
 
-  const { projectId } = req.params;
+//   const { projectId } = req.params;
 
-  const { colaborators, newManager, options } = req.body;
+//   const { colaborators, newManager, options } = req.body;
 
-  if (!colaborators && !newManager) {
-    return next(
-      new AppError(
-        `Either colaborators or newManager must be assigned to operate`,
-        400
-      )
-    );
-  }
+//   if (!colaborators && !newManager) {
+//     return next(
+//       new AppError(
+//         `Either colaborators or newManager must be assigned to operate`,
+//         400
+//       )
+//     );
+//   }
 
-  if (!colaborators && options) {
-    return next(
-      new AppError(
-        `Missing colaborators when options is assigned to a value`,
-        400
-      )
-    );
-  }
+//   if (!colaborators && options) {
+//     return next(
+//       new AppError(
+//         `Missing colaborators when options is assigned to a value`,
+//         400
+//       )
+//     );
+//   }
 
-  const updateObjects = {};
+//   const updateObjects = {};
 
-  if (options && options.add) {
-    updateObjects.$push = {
-      colaborators: {
-        $each: colaborators,
-      },
-    };
-  } else if (colaborators) {
-    updateObjects.$pull = {
-      colaborators: {
-        $in: colaborators,
-      },
-    };
-  }
+//   if (options && options.add) {
+//     updateObjects.$push = {
+//       colaborators: {
+//         $each: colaborators,
+//       },
+//     };
+//   } else if (colaborators) {
+//     updateObjects.$pull = {
+//       colaborators: {
+//         $in: colaborators,
+//       },
+//     };
+//   }
 
-  if (newManager) {
-    const updatedcolaborators = updateObjects.$push
-      ? [...updateObjects.$push.colaborators.$each, newManager]
-      : [newManager];
-    updateObjects.$push.colaborators.$each = updatedcolaborators;
-  }
+//   if (newManager) {
+//     const updatedcolaborators = updateObjects.$push
+//       ? [...updateObjects.$push.colaborators.$each, newManager]
+//       : [newManager];
+//     updateObjects.$push.colaborators.$each = updatedcolaborators;
+//   }
 
-  const project = await Project.findOneAndUpdate(
-    {
-      _id: projectId,
-      manager: id,
-    },
-    updateObjects,
-    {
-      new: true,
-      runValidators: true,
-    }
-  );
+//   const project = await Project.findOneAndUpdate(
+//     {
+//       _id: projectId,
+//       manager: id,
+//     },
+//     updateObjects,
+//     {
+//       new: true,
+//       runValidators: true,
+//     }
+//   );
 
-  if (!project) {
-    return next(
-      new AppError(
-        `Either no document found with ID: ${projectId} or you do not have permission to perform this action`,
-        404
-      )
-    );
-  }
+//   if (!project) {
+//     return next(
+//       new AppError(
+// eslint-disable-next-line max-len
+//         `Either no document found with ID: ${projectId} or you do not have permission to perform this action`,
+//         404
+//       )
+//     );
+//   }
 
-  return res.status(200).json({
-    status: "success",
-    data: project,
-  });
-});
+//   return res.status(200).json({
+//     status: "success",
+//     data: project,
+//   });
+// });
 
 exports.deleteProject = catchAsync(async (req, res, next) => {
   const { id } = req.user;
